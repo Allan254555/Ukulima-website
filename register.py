@@ -1,11 +1,6 @@
-from flask import Flask,redirect,url_for,render_template
+from website import create_app
 
-app=Flask(__name__)
-
-#registration route
-@app.route("/")
-def register():
-    return render_template("index.html")
+app = create_app()
 
 if __name__ == '__main__':
     app.run(debug=True)

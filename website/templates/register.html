@@ -1,0 +1,18 @@
+<html>
+    <body>
+        <head>
+            <meta charset="UTF-8">
+            <title>Register</title>
+        </head>
+        <form action="/register" method="post">
+            First Name: <input type="text" name="firstName" required><br><br>
+            Last Name: <input type="text" name="lastName" required><br><br>
+            Email: <input type="email" name="email" required><br><br>
+            Password: <input type="password" name="password" required><br><br>
+            <input type="submit" value="Register">
+        <form\>
+        <p>Already have an account? <a href="{{url_for('routes.login')}}">Login here</a></p>
+        
+
+    </body>
+</html>
