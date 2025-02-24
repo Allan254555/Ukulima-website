@@ -9,7 +9,7 @@ from datetime import date
 from flask_cors import CORS
 # Initialize Flask app and JWT manager
 app = Flask(__name__)
-CORS(app)
+
 
 app.config['SECRET_KEY'] = 'ukulima'
 app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # JWT Secret Key
