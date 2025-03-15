@@ -1,27 +1,44 @@
-from . import db 
-from werkzeug.security import generate_password_hash, check_password_hash
+from . import db
 # User model
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     firstname = db.Column(db.String(150), nullable=False)
-    lastname = db.Column(db.String(150), nullable=False)
-    email = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(1000), nullable=False)
+    lastname= db.Column(db.String(150), nullable=False)
+    phone = db.Column(db.String(150), unique=True, nullable=False)
+    email = db.Column(db.String(150),unique=True,nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    is_staff = db.Column(db.Boolean, default=False)
     
-    def __init__(self, firstname, lastname, email, password):
-        self.firstname = firstname
-        self.lastname = lastname
-        self.email = email.lower()  # Normalize email
-        self.set_password(password)
+class Employee(db.Model):
+    employeeId = db.Column(db.Integer,primary_key=True)
+    userId = db.Column(db.Integer, db.ForeignKey(User.id),nullable=False,unique=True)
+    role = db.Column(db.String(100),nullable=False)
+    salary = db.Column(db.Float,nullable=False)
+    hireDate = db.Column(db.Date, nullable=False)
+    
+#category model for product category
+class Category(db.Model):
+    categoryId = db.Column(db.Integer,primary_key=True)
+    name=db.Column(db.String(100),unique=True, nullable=False)
+    url=db.Column(db.String(255), nullable=True)
+    products = db.relationship('Product',backref='category',lazy=True,cascade="all,delete-orphan")
+    
+#Product model for the product category
+class Product(db.Model):
+    productsID = db.Column(db.Integer,primary_key=True)
+    categoryId = db.Column(db.Integer, db.ForeignKey('category.categoryId'),nullable=False)
+    productName =db.Column(db.String(100),unique=True,nullable=False)
+    price = db.Column(db.Float,nullable=False)
+    productDescription = db.Column(db.String(255),nullable=False)
+    image_url = db.Column(db.String(255))
+    quantity =db.Column(db.Integer)
+    
+class Cart(db.Model):
+    cartID =db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey(Product.productsID), nullable=False)
+    quantity = db.Column(db.Integer, default=0)
+    
 
-    def set_password(self, password):
-        self.password = generate_password_hash(password, method="pbkdf2:sha256")
-
-    def check_password(self, password):
-        return check_password_hash(self.password, password)
-
-    def __repr__(self):
-        return f'<User {self.email}>'
-        
 
 
