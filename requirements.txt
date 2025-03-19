@@ -1,0 +1,13 @@
+flask_jwt_extended
+flask_sqlalchemy
+flask_marshmallow
+flask_cors
+flask_migrate
+flask_script
+flask_bcrypt
+flask_mail
+flask_uploads
+flask_restful
+marshmallow-sqlalchemy
+marshmallow
+Flask

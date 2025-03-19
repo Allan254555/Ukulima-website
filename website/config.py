@@ -7,8 +7,8 @@ class Config:
     JWT_SECRET_KEY = 'your_jwt_secret_key'
     
     # File Upload Settings
-    UPLOAD_FOLDER = 'static/uploads'
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+    UPLOAD_FOLDER = os.path.join('static','uploads')
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     
 # Ensure upload folder exists
 if not os.path.exists(Config.UPLOAD_FOLDER):

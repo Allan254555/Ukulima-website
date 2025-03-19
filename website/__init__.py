@@ -8,7 +8,7 @@ db = SQLAlchemy()
 jwt = JWTManager()
     
 def create_app():
-    app=Flask(__name__, template_folder='templates')
+    app=Flask(__name__, template_folder='templates', static_folder="static")
     app.config['SECRET_KEY'] = 'ukulima'
     app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # JWT Secret Key
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')

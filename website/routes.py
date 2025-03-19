@@ -36,7 +36,7 @@ def register():
     return jsonify({"msg": "Registration successful"}), 201
 
 # Login Endpoint
-@routes.route('/login', methods=['POST'])
+@routes.route('/login', methods=['GET'])
 def login():
     data = request.get_json()
 
