@@ -5,7 +5,7 @@ import uuid
 import os
 from werkzeug.utils import secure_filename
 from .routes import staff_required
-from .models import User,Category,Product, Cart
+from .models import Category,Product, Cart
 from .config import Config
 
 views = Blueprint("views", __name__)
@@ -18,12 +18,15 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in Config.ALLOWED_EXTENSIONS
 
+@views.route('/static/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(os.path.abspath("static/uploads"), filename)
+
 @views.route('/categories', methods=['GET'])
 def get_categories():
     categories = Category.query.all()
     category_list = [{"id": c.categoryId, "name": c.name} for c in categories]
     return jsonify({"categories": category_list})
-
 
 #Add category end point
 @views.route('/staff/categories', methods=['POST'])
@@ -54,7 +57,8 @@ def add_category():
     file.save(filepath)
     image_url = f"static/uploads/{unique_filename}"
     
-    new_category = Category(name=name, image_url=image_url)
+    new_category = Category(name=name,
+                            image_url=image_url)
     db.session.add(new_category)
     db.session.commit()
     
@@ -116,11 +120,6 @@ def add_product():
 
     return jsonify({"msg": "Product added successfully"}), 201
     
-
-@views.route('/static/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(os.path.abspath("static/uploads"), filename)
-
 @views.route('/products', methods=['GET'])
 def get_products():
     page = request.args.get('page', 1, type=int)  
@@ -146,7 +145,11 @@ def get_products():
             "current_page": pagination.page,
             "has_next": pagination.has_next,
             "has_prev": pagination.has_prev
-    })    
+    })
+    
+    
+
+   
  
 @views.route('/cart/add', methods=['POST'])
 @jwt_required()

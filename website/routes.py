@@ -7,60 +7,15 @@ import os
 from datetime import date
 from .models import User,  Employee
 
+
 routes = Blueprint('routes', __name__)
-# Registration Endpoint
-@routes.route('/register', methods=['POST'])
-def register():
-    data = request.get_json()
-    
-    firstname = data.get('firstname')
-    lastname = data.get("lastname")
-    phone = data.get("phone")
-    email = data.get('email').lower()
-    password = data.get('password')
-    is_staff = data.get('is_staff', False) 
-
-    # Check if user already exists
-    existing_user = User.query.filter((User.email==email)).first()
-    if existing_user:
-        return jsonify({"msg":"user already exists"}),400
-    # Hash the password
-    hashed_password = generate_password_hash(password)
-    
-    # Store the user in the "database"
-    new_user = User(firstname=firstname,lastname=lastname, phone=phone,email=email, password=hashed_password, is_staff =is_staff)
-    db.session.add(new_user)
-    db.session.commit()
-    
-
-    return jsonify({"msg": "Registration successful"}), 201
-
-# Login Endpoint
-@routes.route('/login', methods=['GET'])
-def login():
-    data = request.get_json()
-
-    email = data.get('email').lower()
-    password = data.get('password')
-
-    # Check if user exists in the database
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        return jsonify({"msg":"Enter correct Email Address or register"}),404
-    if not check_password_hash(user.password, password):
-        return jsonify({"msg": "Incorrect password"}), 401
-
-    # Create a JWT token
-    access_token = create_access_token(identity=user.email)
-    return jsonify(access_token=access_token), 200
-
 
 def staff_required(fn):
     @wraps(fn)  # Preserve function name and metadata
     @jwt_required()
     def wrapper(*args, **kwargs):
         current_user_email = get_jwt_identity()
-        user = User.query.filter_by(email=current_user_email).first()
+        user =User.query.filter_by(email=current_user_email).first()
         
         if not user or not user.is_staff:
             return jsonify({"msg": "staff access required"}), 403

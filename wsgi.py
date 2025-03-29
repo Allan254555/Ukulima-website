@@ -1,5 +1,8 @@
-from app import app
-from waitress import serve
+from website import create_app
+from flask_cors  import CORS
 
-if __name__ == "__main__":  
-    serve(app, host='0.0.0.0', port=8000)
+app = create_app()
+CORS(app)
+
+if __name__ == "__main__": 
+    app.run(debug=True)

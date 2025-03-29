@@ -1,9 +1,10 @@
 from . import db
 from datetime import datetime
+from flask_login import UserMixin
 
 # User model
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     firstname = db.Column(db.String(150), nullable=False)
     lastname= db.Column(db.String(150), nullable=False)
@@ -13,7 +14,7 @@ class User(db.Model):
     is_staff = db.Column(db.Boolean, default=False)
    
 #Employee model for employee details
-class Employee(db.Model):
+class Employee(db.Model, UserMixin):
     employeeId = db.Column(db.Integer,primary_key=True)
     userId = db.Column(db.Integer, db.ForeignKey(User.id),nullable=False,unique=True)
     role = db.Column(db.String(100),nullable=False)
@@ -42,21 +43,21 @@ class Product(db.Model):
 class Orders(db.Model):
     orderID = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
-    totalPrice = db.Column(db.Numeric(10,2), nullable=False)
-    status = db.Column(db.Enum('Pending','Processing','Shipped','Delivered','Cancelled'), default='Pending')
-    orderdate = db.Column(db.DateTime, default=datetime.now())
+    total_amount = db.Column(db.Numeric(10,2), nullable=False)
+    order_status = db.Column(db.Enum('Pending','Processing','Shipped','Delivered','Cancelled'), default='Pending')
+    order_date = db.Column(db.DateTime, default=datetime.now())
     created_at = db.Column(db.DateTime, default=datetime.now())
     updated_at = db.Column(db.DateTime, default=datetime.now(), onupdate=datetime.now())
     
     user = db.relationship('User', backref=db.backref('orders', lazy=True, cascade='all, delete'))
-    items = db.relationship('OrderItem', backref='order', lazy=True, cascade='all, delete-orphan')
+    items = db.relationship('OrderItem', backref='orders', lazy=True, cascade='all, delete-orphan')
     
 class OrderItem(db.Model):
     itemID = db.Column(db.Integer, primary_key=True)
     orderID = db.Column(db.Integer, db.ForeignKey(Orders.orderID), nullable=False)
     productID = db.Column(db.Integer, db.ForeignKey(Product.productsID), nullable=False)
     quantity = db.Column(db.Integer, nullable= False, default=0)
-    price = db.Column(db.Numeric(10,2), nullable=False)
+    sub_total = db.Column(db.Numeric(10,2), nullable=False)
     
     product = db.relationship('Product', backref=db.backref('order_items', lazy=True, cascade='all, delete'))
     
