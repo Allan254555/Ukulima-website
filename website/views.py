@@ -147,10 +147,7 @@ def get_products():
             "has_prev": pagination.has_prev
     })
     
-    
 
-   
- 
 @views.route('/cart/add', methods=['POST'])
 @jwt_required()
 def add_to_cart():

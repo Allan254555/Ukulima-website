@@ -1,4 +1,30 @@
-POST http://127.0.0.1:5000/upload
+POST http://127.0.0.1:5000/staff/products
 Content-Type: multipart/form-data
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0Mzg0OTAzMywianRpIjoiOGI5MGY4NTUtNzVlMy00YThmLTg4NjMtOTJhN2E4YzA2OTMzIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImFsbGFub3N1a2FAZ21haWwuY29tIiwibmJmIjoxNzQzODQ5MDMzLCJjc3JmIjoiYWU2MGQ5YWYtMjRjOC00YTliLThiNGQtMmExMzZiZjE3Y2YyIiwiZXhwIjoxNzQzODUyNjMzfQ.c48Vg_pYR3OGCPoXyeJjFk0mrCSaaMqIJDDjcNnLQtc
 
-image=@C:/Users/Studyroom/Desktop/download.jpeg
+--boundary
+Content-Disposition: form-data; name="productName"
+
+maize seeds
+--boundary
+Content-Disposition: form-data; name="price"
+
+1000
+--boundary
+Content-Disposition: form-data; name="categoryId"
+
+2
+--boundary
+Content-Disposition: form-data; name="productDescription"
+
+Yellow maize seeds bags
+--boundary
+Content-Disposition: form-data; name="quantity"
+
+50
+--boundary
+Content-Disposition: form-data; name="image_url"; filename="ChatGPT Image Apr 5, 2025, 10_24_23 AM.png"
+Content-Type: image/png
+
+ < C:\Users\Studyroom\Downloads\ChatGPT Image Apr 5, 2025, 10_24_23 AM.png" >
+--boundary--

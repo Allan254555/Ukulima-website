@@ -15,7 +15,14 @@ def create_order():
         return jsonify({"msg": "User not found"}), 404
     
     data = request.get_json()
-    order_items = data.get('order_items', [])#For direct orders
+    order_items = data.get('order_items')
+    
+    #For direct orders
+    if not order_items and 'productsID' in data and 'quantity' in data:
+        order_items = [{
+            "productsID": data['productsID'],
+            "quantity": data['quantity']
+        }]
         
     if not order_items:
         #If no items are provided fetch from cart
@@ -24,21 +31,21 @@ def create_order():
         if not cart_items:
             return jsonify({"msg": "No items to order"}), 400
         
-        order_items = [{"product_id": item.product_id, "quantity": item.quantity} for item in cart_items]
+        order_items = [{"productsID": item.productsID, "quantity": item.quantity} for item in cart_items]
         
     total_amount = 0
     order_item_list = []  
     
     for item in order_items:
-        product = Product.query.get(item['product_id'])
+        product = Product.query.get(item['productsID'])
         if not product:
-            return jsonify({"msg": f"Product ID{item.get("product_id")} not found"}), 404
+            return jsonify({"msg": f"Product ID{item.get("productsID")} not found"}), 404
         
-        if product.quantity < item('quantity',0):
+        if product.quantity < item.get('quantity',0):
             return jsonify({"msg": "Insufficient stock"}), 400
         
         # Calculate total amount
-        sub_total += product.price * item['quantity']
+        sub_total = product.price * item['quantity']
         total_amount += sub_total
         
         order_item = OrderItem(
@@ -68,12 +75,12 @@ def create_order():
         Cart.query.filter_by(user_id=user.id).delete()
         db.session.commit()
         
-    return jsonify({"msg": "Order created successfully", "order_id": new_order.orderID}), 201
+    return jsonify({"msg": "Order created successfully", "orderID": new_order.orderID}), 201
 #Process order
-@orders.route('/order/process/<int:order_id>', methods=['POST'])
+@orders.route('/order/process/<int:orderID>', methods=['POST'])
 @jwt_required()
-def process_order(order_id):
-    order=Orders.query.get(order_id)
+def process_order(orderID):
+    order=Orders.query.get(orderID)
     if not order:
         return jsonify({"msg":"Order not found"}),404
     
@@ -90,12 +97,12 @@ def process_order(order_id):
     order.order_status = "Processing"
     db.session.commit()
     return jsonify({"msg":"Order processed successfully"}),200
-
+"""
 #Cancel order
-@orders.route('/order/cancel/<int:order_id>', methods=['POST'])
+@orders.route('/order/cancel/<int:orderID>', methods=['POST'])
 @jwt_required()
-def cancel_order(order_id):
-    order = Orders.query.get(order_id)
+def cancel_order(orderID):
+    order = Orders.query.get(orderID)
     if not order:
         return jsonify({"msg":"Order not found"}),404
     
@@ -110,9 +117,100 @@ def cancel_order(order_id):
     
     order.order_status = "Cancelled"
     db.session.commit()
-    return jsonify({"msg":"Order cancelled successfully"}),200
+    return jsonify({"msg":"Order cancelled successfully"}),200"""
+
+#View all orders in admin dashboard
+@orders.route("/admin/orders", methods=["GET"])
+@jwt_required()
+def view_orders():
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
+    
+    if not user or not user.is_staff:
+        return jsonify({"msg": "Unauthorized Access"}), 403
+    
+    order_records = Orders.query.filter(Orders.order_status != "Delivered")\
+                         .order_by(Orders.order_date.desc()).all()
+    order_list = []
+    
+    for order in order_records:
+        
+        order_list.append({
+            "orderID": order.orderID,
+            "user": f"{order.user.firstname} {order.user.lastname}",
+            "email": order.user.email,
+            "order_date": order.order_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "order_status": order.order_status,
+            "total_amount": order.total_amount,
+            
+        })
+        
+    return jsonify({"orders":order_list}), 200  
+
+#Click on action to view on a specific order in order details page
+@orders.route("/admin/order/<int:orderID>", methods=["GET"])
+@jwt_required()
+def get_order_details(orderID):
+    order = Orders.query.get(orderID)
+    if not order:
+        return jsonify({"msg":"Order not found"}),404
+    items= []
+    for item in order.items:
+        items.append({
+            "productName": item.product.productName,
+            "quantity": item.quantity,
+            "price": item.product.price,
+            "sub_total": item.sub_total
+        })
 
 
+    data={
+        "orderID": order.orderID,
+        "user":{ 
+            "name":f"{order.user.firstname} {order.user.lastname}",
+            "email":order.user.email,
+            "phone":order.user.phone,
+        },
+        "items": items,
+        "total_amount": order.total_amount,
+        "order_status": order.order_status,
+        "order_date": order.order_date.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        
+    return jsonify(data), 200
+    
+#Update order status in order details page
+@orders.route("/admin/order/update<int:orderID>", methods=["PATCH"])
+@jwt_required()
+def update_order_status(orderID):
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
+    
+    if not user or not user.is_staff:
+        return jsonify({"msg": "Unauthorized Access"}), 403
+    
+    order = Orders.query.get(orderID)
+    
+    if not order:
+        return jsonify({"msg": "Order not found"}), 404
+    
+    data = request.get_json()
+    new_status = data.get("order_status")
+    
+    if new_status not in ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"]:
+        return jsonify({"msg": "Invalid status"}), 400
+    
+    if new_status == "Cancelled" and order.order_status != "Cancelled":
+        # Restock items in the order
+        for item in order.items:
+            product = Product.query.get(item.productID)
+            if product:
+                product.quantity += item.quantity
+    
+    order.order_status = new_status
+    db.session.commit()
+    
+    return jsonify({"msg": f"Order status updated to {new_status}"}), 200
     
     
     

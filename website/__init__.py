@@ -16,7 +16,7 @@ def create_app():
     app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # JWT Secret Key
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(hours=1)
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(hours=24)
     
     db.init_app(app)
     migrate.init_app(app, db)
@@ -34,12 +34,12 @@ def create_app():
     from .orders import orders
     from .auth import auth
     from .routes import routes
-    from .transactions import views as transactions_views
+    from .views import views
 
     app.register_blueprint(routes, url_prefix='/', name='routes_blueprint')
     app.register_blueprint(orders, url_prefix='/api/', name='orders_blueprint')
     app.register_blueprint(auth, url_prefix='/api/', name='auth_blueprint')
-    app.register_blueprint(transactions_views, url_prefix="/", name="transactions_blueprint")
+    app.register_blueprint(views, url_prefix="/", name='views_blueprint')
 
     
     from .models import User, Category, Product, Cart, Employee, Orders, OrderItem, Payment
