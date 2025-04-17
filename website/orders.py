@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 orders = Blueprint("orders", __name__)
 
+
 #Order creation endpoint
 @orders.route('/order', methods=['POST'])
 @jwt_required()
@@ -76,6 +77,38 @@ def create_order():
         db.session.commit()
         
     return jsonify({"msg": "Order created successfully", "orderID": new_order.orderID}), 201
+
+
+#Customer can view there own orders
+@orders.route('/my_orders', methods =['GET'])
+@jwt_required()
+def get_my_orders():
+    email = get_jwt_identity()
+    user = User.query.filter_by(email=email).first()
+    
+    if not user:
+        return jsonify({"msg":"User not found"}),404
+    
+    user_orders = Orders.query.filter_by(user_id=user.id).all()
+    order_list = []
+    for order in user_orders:
+        items = [{
+            "productName": item.product.productName,
+            "quantity": item.quantity,
+            "price": item.product.price,
+            "sub_total": item.sub_total
+        } for item in order.items]
+
+        
+        order_list.append({
+            "orderID": order.orderID,
+            "order_date": order.order_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "order_status": order.order_status,
+            "total_amount": order.total_amount,
+            "items": items
+        })
+        
+    return jsonify({"orders": order_list}), 200
 #Process order
 @orders.route('/order/process/<int:orderID>', methods=['POST'])
 @jwt_required()
@@ -211,6 +244,4 @@ def update_order_status(orderID):
     db.session.commit()
     
     return jsonify({"msg": f"Order status updated to {new_status}"}), 200
-    
-    
-    
+       

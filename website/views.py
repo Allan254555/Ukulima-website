@@ -133,7 +133,7 @@ def get_products():
             "productName": p.productName,
             "price": p.price,
             "quantity": p.quantity,
-            "categoryId": p.category.name if p.category else None,
+            "categoryName": p.category.name if p.category else None,
             "image_url": request.host_url + p.image_url
         }
         for p in pagination.items
