@@ -1,0 +1,599 @@
+openapi: 3.0.0
+info:
+  title: Ukulima API
+  version: v1
+servers:
+  - url: http://your-api-url.com/ # Replace with your actual API base URL
+    description: Development server
+paths:
+  /register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstname:
+                  type: string
+                lastname:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                is_staff:
+                  type: boolean
+              required:
+                - firstname
+                - lastname
+                - phone
+                - email
+                - password
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '400':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+  /login:
+    get:
+      summary: Login a user and get an access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Login successful, returns access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '401':
+          description: Incorrect password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+  /staff:
+    get:
+      summary: Access staff-only resource
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Welcome message for staff
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '403':
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+  /staff/users:
+    get:
+      summary: List all users (staff only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    firstname:
+                      type: string
+                    lastname:
+                      type: string
+                    email:
+                      type: string
+                      format: email
+                    phone:
+                      type: string
+                    is_staff:
+                      type: boolean
+        '403':
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+  /staff/users/{user_id}/promote:
+    put:
+      summary: Promote a user to staff (staff only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+          description: ID of the user to promote
+      responses:
+        '200':
+          description: User promoted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '403':
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+  /staff/users/{user_id}:
+    delete:
+      summary: Delete a user (staff only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+          description: ID of the user to delete
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '403':
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+  /customers:
+    get:
+      summary: Access customer-only resource
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Welcome message for customer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '403':
+          description: Access restricted to customers only
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+  /protected:
+    get:
+      summary: Protected endpoint requiring authentication
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Returns the identity of the logged-in user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logged_in_as:
+                    type: string
+  /register/staff:
+    post:
+      summary: Register a new staff member (requires admin credentials)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ukulima_superuser_username:
+                  type: string
+                ukulima_superuser_password:
+                  type: string
+                firstname:
+                  type: string
+                lastname:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                role:
+                  type: string
+                salary:
+                  type: number
+                  format: float
+              required:
+                - ukulima_superuser_username
+                - ukulima_superuser_password
+                - firstname
+                - lastname
+                - phone
+                - email
+                - password
+                - role
+                - salary
+      responses:
+        '201':
+          description: Staff registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '400':
+          description: Invalid initiator information or user already exists
+          content:
+            application/json:
+              oneOf:
+                - schema:
+                    type: object
+                    properties:
+                      error:
+                        type: string
+                  - schema:
+                    type: object
+                    properties:
+                      msg:
+                        type: string
+  /categories:
+    get:
+      summary: Get all product categories
+      responses:
+        '200':
+          description: A list of categories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+  /staff/categories:
+    post:
+      summary: Add a new product category (staff only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+              required:
+                - name
+                - file
+      responses:
+        '200':
+          description: Category added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '400':
+          description: No image uploaded or category already exists or invalid file type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+  /staff/products:
+    post:
+      summary: Add a new product (staff only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                productName:
+                  type: string
+                price:
+                  type: number
+                  format: float
+                categoryId:
+                  type: integer
+                productDescription:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+                quantity:
+                  type: integer
+              required:
+                - productName
+                - price
+                - categoryId
+                - file
+                - quantity
+      responses:
+        '201':
+          description: Product added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '400':
+          description: No image uploaded or product already exists or invalid file type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+  /static/uploads/{filename}:
+    get:
+      summary: Serve uploaded files
+      parameters:
+        - in: path
+          name: filename
+          required: true
+          schema:
+            type: string
+          description: Name of the uploaded file
+      responses:
+        '200':
+          description: Returns the requested file
+          content:
+            image/*: # Assuming image files are primarily served
+              schema:
+                type: string
+                format: binary
+  /products:
+    get:
+      summary: Get a paginated list of products
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number to retrieve
+        - in: query
+          name: per_page
+          schema:
+            type: integer
+            default: 9
+          description: Number of items per page
+      responses:
+        '200':
+          description: A paginated list of products
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        productsID:
+                          type: integer
+                        productName:
+                          type: string
+                        price:
+                          type: number
+                          format: float
+                        quantity:
+                          type: integer
+                        categoryId:
+                          type: string
+                        image_url:
+                          type: string
+                  total_products:
+                    type: integer
+                  total_pages:
+                    type: integer
+                  current_page:
+                    type: integer
+                  has_next:
+                    type: boolean
+                  has_prev:
+                    type: boolean
+  /cart/add:
+    post:
+      summary: Add a product to the user's cart (requires authentication)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_id:
+                  type: integer
+                quantity:
+                  type: integer
+                  default: 1
+              required:
+                - product_id
+      responses:
+        '201':
+          description: Item added to cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '400':
+          description: Insufficient stock
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '500':
+          description: Error adding item to cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  error:
+                    type: string
+securitySchemes:
+  bearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT

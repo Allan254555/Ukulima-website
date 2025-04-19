@@ -11,7 +11,7 @@ def create_app():
     app=Flask(__name__, template_folder='templates', static_folder="static")
     app.config['SECRET_KEY'] = 'ukulima'
     app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # JWT Secret Key
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:open.1000@localhost:3306/ukulima'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(hours=1)
     
