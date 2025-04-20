@@ -44,7 +44,8 @@ class Orders(db.Model):
     orderID = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
     total_amount = db.Column(db.Numeric(10,2), nullable=False)
-    order_status = db.Column(db.Enum('Pending','Processing','Shipped','Delivered','Cancelled'), default='Pending')
+    order_status = db.Column(db.Enum('Unpaid','Pending','Processing','Shipped','Delivered','Cancelled'), default='Unpaid')
+    paystack_reference = db.Column(db.String(255), nullable=True)
     order_date = db.Column(db.DateTime, default=datetime.now())
     created_at = db.Column(db.DateTime, default=datetime.now())
     updated_at = db.Column(db.DateTime, default=datetime.now(), onupdate=datetime.now())
@@ -66,8 +67,10 @@ class Payment(db.Model):
     orderID = db.Column(db.Integer, db.ForeignKey(Orders.orderID), nullable=False)
     userID = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
     amount = db.Column(db.Numeric(10,2), nullable=False)
-    paymentMethod = db.Column(db.Enum('Cash on Delivery','Credit Card','Debit Card','Paypal','Google Pay','Apple Pay'), nullable=False)
-    paymentStatus = db.Column(db.Enum('Pending','Processing','Completed','Failed'), default='Pending')
+    paymentMethod = db.Column(db.Enum("Paystack","Mobilemoney"), nullable=False)
+    paymentStatus = db.Column(db.Enum('Pending','Success'), default='Pending')
+    transaction_reference = db.Column(db.String(255), nullable=True)
+    currency = db.Column(db.String(3), default="KES")
     paymentDate = db.Column(db.DateTime, default=datetime.now())
     
     order = db.relationship('Orders', backref=db.backref('payments', lazy=True, cascade='all, delete'))
@@ -76,8 +79,9 @@ class Payment(db.Model):
 class Cart(db.Model):
     cartID =db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.productsID'), nullable=False)
-    quantity = db.Column(db.Integer, default=0)
+    productID = db.Column(db.Integer, db.ForeignKey('product.productsID'), nullable=False)
+    quantity = db.Column(db.Integer, default=1, nullable=False)
+    total_price = db.Column(db.Numeric(10,2), nullable=False)
     
     
     user = db.relationship('User', backref=db.backref('cart', lazy=True, cascade='all, delete'))

@@ -9,8 +9,8 @@ orders = Blueprint("orders", __name__)
 @orders.route('/order', methods=['POST'])
 @jwt_required()
 def create_order():
-    user_email = get_jwt_identity()
-    user = User.query.filter_by(email=user_email).first()
+    email = get_jwt_identity()
+    user = User.query.filter_by(email=email).first()
     
     if not user:
         return jsonify({"msg": "User not found"}), 404
@@ -32,7 +32,7 @@ def create_order():
         if not cart_items:
             return jsonify({"msg": "No items to order"}), 400
         
-        order_items = [{"productsID": item.productsID, "quantity": item.quantity} for item in cart_items]
+        order_items = [{"productsID": item.productID, "quantity": item.quantity} for item in cart_items]
         
     total_amount = 0
     order_item_list = []  
@@ -61,7 +61,7 @@ def create_order():
     new_order=Orders(
         user_id=user.id,
         total_amount=total_amount,
-        order_status='Pending',  
+        order_status='Unpaid',  
     )
     db.session.add(new_order)
     db.session.commit()
@@ -70,6 +70,12 @@ def create_order():
     for order_item in order_item_list:
         order_item.orderID = new_order.orderID
         db.session.add(order_item)
+        
+        #deduct stock
+        product = Product.query.get(order_item.productID)
+        product.quantity -= order_item.quantity
+        
+        db.session.commit()
         
     # If order is from cart, clear cart
     if not data.get('items', []):  # Only clear cart if ordering from cart
@@ -156,8 +162,8 @@ def cancel_order(orderID):
 @orders.route("/admin/orders", methods=["GET"])
 @jwt_required()
 def view_orders():
-    user_email = get_jwt_identity()
-    user = User.query.filter_by(email=user_email).first()
+    email = get_jwt_identity()
+    user = User.query.filter_by(email=email).first()
     
     if not user or not user.is_staff:
         return jsonify({"msg": "Unauthorized Access"}), 403
@@ -216,8 +222,8 @@ def get_order_details(orderID):
 @orders.route("/admin/order/update<int:orderID>", methods=["PATCH"])
 @jwt_required()
 def update_order_status(orderID):
-    user_email = get_jwt_identity()
-    user = User.query.filter_by(email=user_email).first()
+    email = get_jwt_identity()
+    user = User.query.filter_by(email=email).first()
     
     if not user or not user.is_staff:
         return jsonify({"msg": "Unauthorized Access"}), 403

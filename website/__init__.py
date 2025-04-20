@@ -37,16 +37,19 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
-    
+    from .payment import payment
     from .orders import orders
     from .auth import auth
     from .routes import routes
     from .views import views
-
-    app.register_blueprint(routes, url_prefix='/', name='routes_blueprint')
+    from .cart import cart
+    
+    app.register_blueprint(cart, url_prefix='/api/', name='cart_blueprint') 
+    app.register_blueprint(payment, url_prefix='/api/', name='payment_blueprint')
+    app.register_blueprint(routes, url_prefix='/api/', name='routes_blueprint')
     app.register_blueprint(orders, url_prefix='/api/', name='orders_blueprint')
     app.register_blueprint(auth, url_prefix='/api/', name='auth_blueprint')
-    app.register_blueprint(views, url_prefix="/", name='views_blueprint')
+    app.register_blueprint(views, url_prefix="/api/", name='views_blueprint')
 
     
     from .models import User, Category, Product, Cart, Employee, Orders, OrderItem, Payment

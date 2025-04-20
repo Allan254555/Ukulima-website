@@ -8,6 +8,9 @@ flask_bcrypt
 flask_mail
 flask_uploads
 flask_restful
-marshmallow-sqlalchemy
-marshmallow
-Flask
+Flask-login
+Werkzeug
+requests
+pyJWT
+Flask-mail 
+Flask-login
