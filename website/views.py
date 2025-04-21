@@ -119,6 +119,79 @@ def add_product():
     db.session.commit()
 
     return jsonify({"msg": "Product added successfully"}), 201
+
+@views.route('/staff/products/<int:productsID>', methods=['PATCH'])
+@staff_required
+def update_product(productsID):
+    product = Product.query.get(productsID)
+    if not product:
+        return jsonify({"msg": "Product not found"}), 404
+    
+    data = request.get_json()
+   
+    price = data.get('price')
+    quantity = data.get('quantity')
+    productDescription = data.get('productDescription')
+    productName = data.get('productName')
+    categoryId = data.get('categoryId')
+    
+    if price is not None:
+        try:
+            product.price = float(price)
+        except ValueError:
+            return jsonify({'msg': 'Invalid price value'}), 400
+
+    if quantity is not None:
+        try:
+            product.quantity = int(quantity)
+        except ValueError:
+            return jsonify({'msg': 'Invalid quantity value'}), 400
+        
+        if product.quantity == 0:
+            db.session.commit()
+            return jsonify({
+                'msg': 'Product updated successfully',
+                'status': 'Out of Stock'
+            }), 200
+            
+    if productName is not None:
+        if productName.strip() == "":
+            return jsonify({'msg': 'Product name cannot be empty'}), 400
+        # Check for name conflict with another product
+        existing = Product.query.filter(Product.productName == productName, Product.productsID != productsID).first()
+        if existing:
+            return jsonify({'msg': 'Another product with that name already exists'}), 400
+        product.productName = productName
+
+    if productDescription is not None:
+        product.productDescription = productDescription
+
+    db.session.commit()
+    
+    # Include stock status if quantity was updated
+    response = {'msg': 'Product updated successfully'}
+    if quantity is not None and product.quantity == 0:
+        response['status'] = 'Out of Stock'
+        
+    return jsonify(response), 200
+    
+@views.route("/products/<int:productsID>", methods=["GET"])
+def get_product_details(productsID):
+    product = Product.query.get(productsID)
+    if not product:
+        return jsonify({"msg": "Product not found"}), 404
+    
+    product_details = {
+        "productsID": product.productsID,
+        "productName": product.productName,
+        "price": product.price,
+        "status":"Out of Stock" if product.quantity == 0 else "In Stock",
+        "productDescription": product.productDescription,
+        "categoryName": product.category.name if product.category else None,
+        "image_url": request.host_url + product.image_url
+    }
+    
+    return jsonify(product_details)
     
 @views.route('/products', methods=['GET'])
 def get_products():
@@ -126,13 +199,15 @@ def get_products():
     per_page = request.args.get('per_page', 9, type=int) #Number of items per page
     
     pagination = Product.query.paginate(page=page, per_page=per_page, error_out=False)
-
+    
     products = [
         {
             "productsID": p.productsID,
             "productName": p.productName,
             "price": p.price,
             "quantity": p.quantity,
+            "status":"Out of Stock" if p.quantity == 0 else "In Stock",
+            "productDescription": p.productDescription,
             "categoryName": p.category.name if p.category else None,
             "image_url": request.host_url + p.image_url
         }
