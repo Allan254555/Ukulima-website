@@ -43,7 +43,9 @@ def create_app():
     from .routes import routes
     from .views import views
     from .cart import cart
+    from .views import uploads
     
+    app.register_blueprint(uploads, url_prefix='/uploads', name='uploads_blueprint')
     app.register_blueprint(cart, url_prefix='/api/', name='cart_blueprint') 
     app.register_blueprint(payment, url_prefix='/api/', name='payment_blueprint')
     app.register_blueprint(routes, url_prefix='/api/', name='routes_blueprint')

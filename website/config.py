@@ -3,7 +3,7 @@ import os
 class Config:
     
     # File Upload Settings
-    UPLOAD_FOLDER = os.path.join('static','uploads')
+    UPLOAD_FOLDER = os.path.join(os.getcwd(),'static','uploads')
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     
 # Ensure upload folder exists
