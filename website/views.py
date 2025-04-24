@@ -27,7 +27,11 @@ def serve_upload(filename):
 @views.route('/categories', methods=['GET'])
 def get_categories():
     categories = Category.query.all()
-    category_list = [{"id": c.categoryId, "name": c.name} for c in categories]
+    category_list = [{
+        "id": c.categoryId, 
+        "name": c.name,
+        "image_url": url_for('uploads_blueprint.serve_upload', filename=c.image_url, _external=True)
+        } for c in categories]
     return jsonify({"categories": category_list})
 
 # Add category endpoint

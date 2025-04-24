@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      padding: 2rem;
+    }
+
+    form {
+      background-color: #fff;
+      padding: 2rem;
+      max-width: 400px;
+      margin: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    input[type="email"], input[type="password"] {
+      width: 100%;
+      padding: 0.7rem;
+      margin: 0.5rem 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      padding: 0.7rem;
+      width: 100%;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .message {
+      margin-top: 1rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <form id="loginForm">
+    <h2>Login</h2>
+
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required>
+
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+
+    <button type="submit">Login</button>
+    <div class="message" id="message"></div>
+  </form>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const message = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const loginData = {
+        email: form.email.value,
+        password: form.password.value
+      };
+
+      try {
+        const res = await fetch('http://localhost:5000/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(loginData)
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          localStorage.setItem('access_token', data.access_token); // ✅ Store token
+          message.style.color = 'green';
+          message.textContent = 'Login successful! Token saved.';
+
+          // Optionally redirect to dashboard or product page
+          // window.location.href = '/add-product.html';
+
+        } else {
+          message.style.color = 'red';
+          message.textContent = data.msg || 'Login failed.';
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        message.style.color = 'red';
+        message.textContent = 'Something went wrong.';
+      }
+    });
+  </script>
+
+</body>
+</html>

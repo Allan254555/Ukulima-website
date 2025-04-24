@@ -13,7 +13,7 @@ load_dotenv() # Load environment variables from .env file
 payment= Blueprint("payment", __name__) # Create a blueprint for payment routes
 
 # Paystack API Keys from environment
-PAYSTACK_SECRET_KEY = ""
+PAYSTACK_SECRET_KEY = "sk_test_055242fba8d7d8ffd40955ec127076bc8afad18a"
 PAYSTACK_PUBLIC_KEY = os.environ.get("PAYSTACK_PUBLIC_KEY")
 PAYSTACK_API_URL = "https://api.paystack.co" # Paystack API URL
 
@@ -47,7 +47,7 @@ def initiate_paystack_payment(orderID):
         "amount": amount,
         "currency": "KES",
         "reference": reference,
-        "callback_url": "/paystack/callback", #
+        "callback_url": "https://f125-41-89-96-143.ngrok-free.app/paystack/callback", #
         "channels":["mobile_money"],
         "metadata":{
             "phone":phone,
@@ -90,7 +90,7 @@ def initiate_paystack_payment(orderID):
     else:
         return jsonify({"msg": "Failed to initiate payment", "error": response.json()}), 400
 
-@payment.route("/paystack_webhook", methods=["POST"])
+@payment.route("/paystack/webhook", methods=["POST"])
 def paystack_webhook():
     data = request.get_json()
 

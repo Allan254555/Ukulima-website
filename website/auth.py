@@ -63,17 +63,13 @@ def login():
 
     # Create a JWT token
     access_token = create_access_token(identity=user.email)
-    return jsonify({"msg":"Login-successful",
-                   "access_token":access_token}), 200
+    response = {
+        "msg":"Login-successful",
+        "access_token": access_token,
+    }
     
+    if user.is_staff:
+        response["is_staff"] = True
+        
+    return jsonify(response), 300
     
-@auth.route('/logout', methods=['GET'])
-@login_required
-def logout():
-    logout_user()
-    return jsonify({"msg": "Successfully logged out"}), 200
-
-@auth.route('/dashboard', methods=['GET'])
-@login_required
-def dashboard():
-    return jsonify({"msg": f"Welcome, {current_user.firstname}!"})

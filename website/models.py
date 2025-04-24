@@ -44,6 +44,10 @@ class Orders(db.Model):
     orderID = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
     total_amount = db.Column(db.Numeric(10,2), nullable=False)
+    
+    delivery_fee = db.Column(db.Numeric(10, 2), nullable=False)  # ✅ delivery fee
+    delivery_address = db.Column(db.String(255), nullable=False)
+    
     order_status = db.Column(db.Enum('Unpaid','Pending','Processing','Shipped','Delivered','Cancelled'), default='Unpaid')
     paystack_reference = db.Column(db.String(255), nullable=True)
     order_date = db.Column(db.DateTime, default=datetime.now())

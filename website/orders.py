@@ -6,7 +6,7 @@ orders = Blueprint("orders", __name__)
 
 
 #Order creation endpoint
-@orders.route('/order', methods=['POST'])
+@orders.route('/create_order', methods=['POST'])
 @jwt_required()
 def create_order():
     email = get_jwt_identity()
@@ -17,6 +17,8 @@ def create_order():
     
     data = request.get_json()
     order_items = data.get('order_items')
+    delivery_address = data.get('delivery_address')
+   
     
     #For direct orders
     if not order_items and 'productsID' in data and 'quantity' in data:
@@ -37,52 +39,61 @@ def create_order():
     total_amount = 0
     order_item_list = []  
     
-    for item in order_items:
-        product = Product.query.get(item['productsID'])
-        if not product:
-            return jsonify({"msg": f"Product ID{item.get("productsID")} not found"}), 404
-        
-        if product.quantity < item.get('quantity',0):
-            return jsonify({"msg": "Insufficient stock"}), 400
-        
-        # Calculate total amount
-        sub_total = product.price * item['quantity']
-        total_amount += sub_total
-        
-        order_item = OrderItem(
-            productID=product.productsID,
-            quantity=item['quantity'],
-            sub_total=sub_total
+    try:
+        for item in order_items:
+            product = Product.query.get(item['productsID'])
+            if not product:
+                return jsonify({"msg": f"Product ID{item.get('productsID')} not found"}), 404
+            
+            if product.quantity < item.get('quantity',0):
+                return jsonify({"msg": "Insufficient stock"}), 400
+            
+            # Calculate total amount
+            sub_total = product.price * item['quantity']
+            total_amount += sub_total
+            
+            order_item = OrderItem(
+                productID=product.productsID,
+                quantity=item['quantity'],
+                sub_total=sub_total
+            )
+            
+            order_item_list.append(order_item)
+        delivery_fee = 150.00 if total_amount > 1500 else 0.00  # Example delivery fee logic
+        # Calculate total amount including delivery fee    
+        total_items_amount = total_amount + delivery_fee     
+        # Create new order
+        new_order=Orders(
+            user_id=user.id,
+            total_amount=total_items_amount,
+            delivery_fee=delivery_fee,
+            delivery_address=delivery_address,
+            order_status='Unpaid',  
         )
+        db.session.add(new_order)
+        db.session.flush()  # Flush to get the orderID before commit
         
-        order_item_list.append(order_item)
-        
-    # Create new order
-    new_order=Orders(
-        user_id=user.id,
-        total_amount=total_amount,
-        order_status='Unpaid',  
-    )
-    db.session.add(new_order)
-    db.session.commit()
-    
-    #save order items
-    for order_item in order_item_list:
-        order_item.orderID = new_order.orderID
-        db.session.add(order_item)
-        
-        #deduct stock
-        product = Product.query.get(order_item.productID)
-        product.quantity -= order_item.quantity
-        
+        #save order items
+        for order_item in order_item_list:
+            order_item.orderID = new_order.orderID
+            db.session.add(order_item)
+            
+            #deduct stock
+            product = Product.query.get(order_item.productID)
+            product.quantity -= order_item.quantity
+            
+           
+        # If order is from cart, clear cart
+        if not data.get('order_items') and not data.get('productsID'):
+        # Only clear cart if ordering from cart
+            Cart.query.filter_by(user_id=user.id).delete()
+           
         db.session.commit()
-        
-    # If order is from cart, clear cart
-    if not data.get('items', []):  # Only clear cart if ordering from cart
-        Cart.query.filter_by(user_id=user.id).delete()
-        db.session.commit()
-        
-    return jsonify({"msg": "Order created successfully", "orderID": new_order.orderID}), 201
+            
+        return jsonify({"msg": "Order created successfully", "orderID": new_order.orderID}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Error creating order", "error": str(e)}), 500
 
 
 #Customer can view there own orders
@@ -219,7 +230,7 @@ def get_order_details(orderID):
     return jsonify(data), 200
     
 #Update order status in order details page
-@orders.route("/admin/order/update<int:orderID>", methods=["PATCH"])
+@orders.route("/admin/order/update/<int:orderID>", methods=["PATCH"])
 @jwt_required()
 def update_order_status(orderID):
     email = get_jwt_identity()

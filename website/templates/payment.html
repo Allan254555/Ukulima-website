@@ -1,0 +1,21 @@
+<!-- payment.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Payment</title>
+</head>
+<body>
+  <h1>Payment Page</h1>
+  <p>Redirecting to payment gateway...</p>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderID = urlParams.get("orderID");
+
+    // Placeholder: Initiate payment logic here
+    // Redirect to PesaPal/Paystack or display payment options
+    alert("Order " + orderID + " created. Implement payment here.");
+  </script>
+</body>
+</html>

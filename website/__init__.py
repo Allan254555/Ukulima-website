@@ -3,12 +3,14 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 import datetime
+from dotenv import load_dotenv
 import os
 from flask_login import LoginManager
 
 db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
+load_dotenv()
     
 def create_app():
     app=Flask(__name__, template_folder='templates', static_folder="static")
