@@ -15,6 +15,8 @@ def add_to_cart():
         quantity = data.get('quantity', 1)  # Default to 1 if not provided
         productID = data.get('productID')
         
+        if not user:
+            return jsonify({"error":"User not found","msg": "Authentication required"}), 401
         #get product by productID
         product = Product.query.get(productID)
         if not product:
@@ -48,6 +50,7 @@ def add_to_cart():
         total_amount = sum(item.total_price for item in cart_items)
         
         return jsonify({"msg": "Item added to cart",
+                        "total_price":total_price,
                         "total_amount":total_amount}), 201       
 
     except Exception as e:
@@ -78,7 +81,9 @@ def update_cart_item(product_id):
         cart_item.quantity = quantity
         cart_item.total_price = quantity * product.price
         db.session.commit()
-        return jsonify({"msg":"Items added to cart successfully"}), 200
+        return jsonify({"msg":f"{product.productName} quantity updated",
+                        "quantity":cart_item.quantity,
+                        }), 200
         
     except Exception as e:
         db.session.rollback()
@@ -132,3 +137,6 @@ def view_cart():
         "total_amount": total_amount
     })
 
+def clear_cart(user_id):
+    Cart.query.filter_by(user_id=user_id).delete()
+    db.session.commit()

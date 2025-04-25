@@ -78,16 +78,6 @@ def create_order():
             order_item.orderID = new_order.orderID
             db.session.add(order_item)
             
-            #deduct stock
-            product = Product.query.get(order_item.productID)
-            product.quantity -= order_item.quantity
-            
-           
-        # If order is from cart, clear cart
-        if not data.get('order_items') and not data.get('productsID'):
-        # Only clear cart if ordering from cart
-            Cart.query.filter_by(user_id=user.id).delete()
-           
         db.session.commit()
             
         return jsonify({"msg": "Order created successfully", "orderID": new_order.orderID}), 201
@@ -126,6 +116,7 @@ def get_my_orders():
         })
         
     return jsonify({"orders": order_list}), 200
+
 #Process order
 @orders.route('/order/process/<int:orderID>', methods=['POST'])
 @jwt_required()
@@ -134,40 +125,14 @@ def process_order(orderID):
     if not order:
         return jsonify({"msg":"Order not found"}),404
     
-    if order.order_status != "Pending":
+    if order.order_status != "Processing":
         return jsonify({"msg":"Order cannot be processed"}),400  
     
-    #Deduct stock for each order item in the order
-    for item in order.items:
-        product = Product.query.get(item.productID)
-        if product and product.quantity >= item.quantity:
-            product.quantity -= item.quantity
-            if product.quantity < 0:
-                return jsonify({"msg":f"Insufficient stock for {product.productName}"}),400
+    
     order.order_status = "Processing"
     db.session.commit()
     return jsonify({"msg":"Order processed successfully"}),200
-"""
-#Cancel order
-@orders.route('/order/cancel/<int:orderID>', methods=['POST'])
-@jwt_required()
-def cancel_order(orderID):
-    order = Orders.query.get(orderID)
-    if not order:
-        return jsonify({"msg":"Order not found"}),404
-    
-    if order.order_status == "Cancelled":
-        return jsonify({"msg":"Order already cancelled"}),400
-    
-    # Restock items in the order
-    for item in order.items:
-        product = Product.query.get(item.productID)
-        if product:
-            product.quantity += item.quantity
-    
-    order.order_status = "Cancelled"
-    db.session.commit()
-    return jsonify({"msg":"Order cancelled successfully"}),200"""
+
 
 #View all orders in admin dashboard
 @orders.route("/admin/orders", methods=["GET"])
@@ -229,36 +194,54 @@ def get_order_details(orderID):
         
     return jsonify(data), 200
     
-#Update order status in order details page
-@orders.route("/admin/order/update/<int:orderID>", methods=["PATCH"])
+# Update order status in order details page
+@orders.route("/admin/order_update/<int:orderID>", methods=["PATCH"])
 @jwt_required()
 def update_order_status(orderID):
     email = get_jwt_identity()
     user = User.query.filter_by(email=email).first()
-    
+
     if not user or not user.is_staff:
         return jsonify({"msg": "Unauthorized Access"}), 403
-    
+
     order = Orders.query.get(orderID)
-    
+
     if not order:
         return jsonify({"msg": "Order not found"}), 404
-    
+
     data = request.get_json()
     new_status = data.get("order_status")
-    
-    if new_status not in ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"]:
+
+    if new_status not in [ "Processing", "Shipped", "Delivered", "Cancelled"]:
         return jsonify({"msg": "Invalid status"}), 400
-    
-    if new_status == "Cancelled" and order.order_status != "Cancelled":
-        # Restock items in the order
-        for item in order.items:
-            product = Product.query.get(item.productID)
-            if product:
-                product.quantity += item.quantity
-    
-    order.order_status = new_status
+
+    try:
+        if new_status == "Cancelled" and order.order_status != "Cancelled":
+            for item in order.items:
+                product = Product.query.get(item.productID)
+                if product:
+                    product.quantity += item.quantity
+
+        order.order_status = new_status
+        db.session.commit()
+
+        return jsonify({"msg": f"Order status updated to {new_status}"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Error updating status", "error": str(e)}), 500
+
+
+def deduct_stock(order_id):
+    order = Orders.query.get(order_id)
+    if not order:
+        return jsonify({"msg": "Order not found"}), 404
+
+    for item in order.items:
+        product = Product.query.get(item.productID)
+        if product and product.quantity >= item.quantity:
+            product.quantity -= item.quantity
+        else:
+            return jsonify({"msg": f"Insufficient stock for {product.productName}"}), 400
+
     db.session.commit()
-    
-    return jsonify({"msg": f"Order status updated to {new_status}"}), 200
-       

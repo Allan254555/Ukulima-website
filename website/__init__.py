@@ -14,18 +14,22 @@ load_dotenv()
     
 def create_app():
     app=Flask(__name__, template_folder='templates', static_folder="static")
-    app.config['SECRET_KEY'] = 'ukulima'
-    app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # JWT Secret Key
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')  # Secret Key for session management
+    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')  # JWT Secret Key
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(hours=24)
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
-    app.config['MAIL_USERNAME'] = 'allanavosa@gmail.com'
-    app.config['MAIL_PASSWORD'] = 'tmlg zllo kpqb nzrm'  # Use App Password (not your Gmail password)
+    app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')  # Your Gmail address
+    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')  # Use App Password (not your Gmail password)
     app.config['MAIL_DEFAULT_SENDER'] = 'your_email@gmail.com'
-
+    
+    
+    flask_env = os.getenv('FLASK_ENV', 'production')
+    app.config['ENV'] = flask_env
+    app.config['DEBUG'] = flask_env == 'development'
     
     db.init_app(app)
     migrate.init_app(app, db)

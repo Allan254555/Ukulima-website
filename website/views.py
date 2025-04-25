@@ -158,6 +158,17 @@ def update_product(productsID):
         response['status'] = 'Out of Stock'
 
     return jsonify(response), 200
+@views.route('/staff/products/<int:productsID>', methods=['DELETE'])
+@staff_required
+def delete_product(productsID):
+    product = Product.query.get(productsID)
+    if not product:
+        return jsonify({"msg": "Product not found"}), 404
+
+    db.session.delete(product)
+    db.session.commit()
+
+    return jsonify({"msg": "Product deleted successfully"}), 200
 
 @views.route('/products', methods=['GET'])
 def get_products():

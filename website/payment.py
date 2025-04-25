@@ -2,20 +2,20 @@ import requests, os, json, hmac, hashlib, datetime
 from dotenv import load_dotenv
 from datetime import datetime
 import hashlib
+from .cart import clear_cart
 from flask import Flask, request, jsonify, Blueprint, render_template, redirect, url_for, abort
 from flask_login import login_required, current_user
 from flask_jwt_extended import jwt_required, get_jwt_identity
-
-from .orders import create_order  # Ensure user authentication
+from .orders import create_order,deduct_stock  # Ensure user authentication
 from .models import db, Payment, Orders,OrderItem, Cart, User
 
 load_dotenv() # Load environment variables from .env file
 payment= Blueprint("payment", __name__) # Create a blueprint for payment routes
 
 # Paystack API Keys from environment
-PAYSTACK_SECRET_KEY = "sk_test_055242fba8d7d8ffd40955ec127076bc8afad18a"
+PAYSTACK_SECRET_KEY = os.environ.get("PAYSTACK_SECRET_KEY")
 PAYSTACK_PUBLIC_KEY = os.environ.get("PAYSTACK_PUBLIC_KEY")
-PAYSTACK_API_URL = "https://api.paystack.co" # Paystack API URL
+PAYSTACK_API_URL = os.environ.get("PAYSTACK_API_URL") # Paystack API URL
 
 
 # Initiate Paystack Payment
@@ -35,6 +35,11 @@ def initiate_paystack_payment(orderID):
     if order.order_status != "Unpaid":
         return jsonify({"msg": "Order already paid or processing"}), 400
     
+    
+    #Fetch phone number from request body if requested
+    phone = user.phone
+    if not phone:
+        return jsonify({"msg": "Phone number is required"}), 400
     #Create a unique reference for the order and save it
     reference = f"FARM{orderID}{datetime.utcnow().strftime('%Y%m%d%H%M%S')}" 
     order.paystack_reference = reference
@@ -47,7 +52,7 @@ def initiate_paystack_payment(orderID):
         "amount": amount,
         "currency": "KES",
         "reference": reference,
-        "callback_url": "https://f125-41-89-96-143.ngrok-free.app/paystack/callback", #
+        "callback_url": "https://1fb6-102-211-145-221.ngrok-free.app/paystack/callback", #
         "channels":["mobile_money"],
         "metadata":{
             "phone":phone,
@@ -94,33 +99,82 @@ def initiate_paystack_payment(orderID):
 def paystack_webhook():
     data = request.get_json()
 
-    if  data.get("event") != "charge.success":
-        return jsonify({"message": "Invalid webhook event"}), 400
+    """if  data.get("event") != "charge.success":
+        return jsonify({"message": "Invalid webhook event"}), 400"""
+        
+    if not data:
+        return jsonify({"message":"No data received"}), 400 
+      
+    event = data.get("event")
+    payment_data = data.get("data",{})
+    reference = payment_data.get("reference")
+    status = payment_data.get("status")
+    
+    if not reference:
+        return jsonify({"message": "No reference found"}), 400
 
-    payment_data = data["data"]
-    reference = payment_data["reference"]
-    status = payment_data["status"]
-
-    if status != "success":
-        return jsonify({"message": "Payment not successful"}), 400
+    """ if status != "success":
+        return jsonify({"message": "Payment not successful"}), 400"""
 
     #find order by reference
     order = Orders.query.filter_by(paystack_reference=reference).first()
     if not order:
         return jsonify({"message": "Order not found"}), 404
     
-    #Check if the payment is already processed
-    existing_payment = Payment.query.filter_by(transaction_reference=reference).first()
-    if existing_payment and existing_payment.paymentStatus == "Success":
-        return jsonify({"message": "Payment already processed"}), 200
     
-    # Update the order status to "Processing"
-    order.order_status = "Processing"
-    db.session.commit()
+    existing_payment = Payment.query.filter_by(transaction_reference=reference).first()
+    
+    #Handle successful payments
+    if event == "charge.success" and status == "success":
+        if existing_payment and existing_payment.paymentStatus == "Success":
+            return jsonify({"message": "Payment already processed"}), 200
+        
+        # Update the payment record to success
+        if existing_payment:
+            existing_payment.paymentStatus = "Success"
+        
+        else:
+             
+            existing_payment = Payment(
+                userID=order.user_id,
+                orderID=order.orderID,
+                paymentMethod="Paystack",
+                amount=order.total_amount,
+                currency="KES",
+                paymentStatus="Success",
+                transaction_reference=reference,
+                paymentDate=datetime.utcnow(),
+            )
+        db.session.add(existing_payment)
 
-    #update payment record
-    if existing_payment:
-        existing_payment.paymentStatus = "Success"
+        order.order_status = "Processing"
         db.session.commit()
 
-    return jsonify({"message": "Payment verified and order updated"}), 200
+        #deduct stock and clear cart
+        deduct_stock(order.orderID)
+        clear_cart(order.user_id)
+
+        return jsonify({"message": "Payment successful, order updated, cart cleared"}), 200
+
+    # Handle failed payments 
+    elif event in ["charge.failed", "charge.abandoned", "charge.expired"] or status != "success":
+        if existing_payment:
+            existing_payment.paymentStatus = "Failed"
+        else:
+            failed_payment = Payment(
+                userID=order.user_id,
+                orderID=order.orderID,
+                paymentMethod="Paystack",
+                amount=order.total_amount,
+                currency="KES",
+                paymentStatus="Failed",
+                transaction_reference=reference,
+                paymentDate=datetime.utcnow(),
+            )
+            db.session.add(failed_payment)
+
+        order.order_status = "Unpaid"
+        db.session.commit()
+        return jsonify({"message": "Payment failed, order remains unpaid"}), 200
+
+    return jsonify({"message": "Unhandled event"}), 400

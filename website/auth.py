@@ -71,5 +71,5 @@ def login():
     if user.is_staff:
         response["is_staff"] = True
         
-    return jsonify(response), 300
+    return jsonify(response), 200
     

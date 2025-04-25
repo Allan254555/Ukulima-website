@@ -3,7 +3,6 @@ from datetime import datetime
 from flask_login import UserMixin
 
 # User model
-
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     firstname = db.Column(db.String(150), nullable=False)
@@ -17,8 +16,6 @@ class User(db.Model, UserMixin):
 class Employee(db.Model, UserMixin):
     employeeId = db.Column(db.Integer,primary_key=True)
     userId = db.Column(db.Integer, db.ForeignKey(User.id),nullable=False,unique=True)
-    role = db.Column(db.String(100),nullable=False)
-    salary = db.Column(db.Float,nullable=False)
     hireDate = db.Column(db.Date, nullable=False)
     
 #category model for product category

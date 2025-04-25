@@ -111,14 +111,15 @@ def register_staff():
     environ_admin_username = os.getenv("UKULIMA_SUPERUSER_USERNAME")
     environ_admin_password = os.environ.get("UKULIMA_SUPERUSER_PASSWORD")
     
+    if not environ_admin_username or not environ_admin_password:
+      return jsonify({"msg": "Superuser credentials not configured"}), 500
+    
     if json_ukulima_superuser_username == environ_admin_username and json_ukulima_superuser_password == environ_admin_password:
         firstname = data.get('firstname')
         lastname = data.get('lastname')
         phone = data.get('phone')
         email = data.get('email').lower()
         password = data.get('password')
-        role = data.get('role')
-        salary = data.get('salary')
         
         # Check if user already exists
         existing_user = User.query.filter_by(email=email).first()
@@ -143,8 +144,6 @@ def register_staff():
         # Create an Employee entry for the staff user
         new_employee = Employee(
             userId=new_staff.id,
-            role=role,
-            salary=salary,
             hireDate=date.today()
         )
         db.session.add(new_employee)
