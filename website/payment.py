@@ -52,7 +52,7 @@ def initiate_paystack_payment(orderID):
         "amount": amount,
         "currency": "KES",
         "reference": reference,
-        "callback_url": "https://1fb6-102-211-145-221.ngrok-free.app/paystack/callback", #
+        "callback_url": "http://localhost:5173/about", #
         "channels":["mobile_money"],
         "metadata":{
             "phone":phone,
@@ -99,9 +99,7 @@ def initiate_paystack_payment(orderID):
 def paystack_webhook():
     data = request.get_json()
 
-    """if  data.get("event") != "charge.success":
-        return jsonify({"message": "Invalid webhook event"}), 400"""
-        
+    
     if not data:
         return jsonify({"message":"No data received"}), 400 
       
@@ -113,8 +111,6 @@ def paystack_webhook():
     if not reference:
         return jsonify({"message": "No reference found"}), 400
 
-    """ if status != "success":
-        return jsonify({"message": "Payment not successful"}), 400"""
 
     #find order by reference
     order = Orders.query.filter_by(paystack_reference=reference).first()
@@ -129,37 +125,52 @@ def paystack_webhook():
         if existing_payment and existing_payment.paymentStatus == "Success":
             return jsonify({"message": "Payment already processed"}), 200
         
-        # Update the payment record to success
-        if existing_payment:
-            existing_payment.paymentStatus = "Success"
         
+        deduction_result = deduct_stock(order.orderID, order.user_id)
+        if not deduction_result["success"]:
+            # If stock cannot be deducted, return a failed message with details of issues
+            db.session.rollback()  # Rollback any changes made so far
+            
+            for item in deduction_result["items"]:
+                cart_item= Cart.query.filter_by(productID=item["product_id"]).first()
+                if cart_item:
+                    cart_item.quantity = item["available"]
+                    db.session.commit()
+            return jsonify({
+                "message": "Payment successful, but insufficient stock. Cart adjusted.",
+                "insufficient_items": deduction_result["items"]
+            }), 400                                                                                                                                                                                                                                                                                                                                                                                     
+            
+            # Update the payment record to success
+        if existing_payment:
+                existing_payment.paymentStatus = "Success"
+            
         else:
-             
-            existing_payment = Payment(
-                userID=order.user_id,
-                orderID=order.orderID,
-                paymentMethod="Paystack",
-                amount=order.total_amount,
-                currency="KES",
-                paymentStatus="Success",
-                transaction_reference=reference,
-                paymentDate=datetime.utcnow(),
-            )
+                
+                existing_payment = Payment(
+                    userID=order.user_id,
+                    orderID=order.orderID,
+                    paymentMethod="Paystack",
+                    amount=order.total_amount,
+                    currency="KES",
+                    paymentStatus="Success",
+                    transaction_reference=reference,
+                    paymentDate=datetime.utcnow(),
+                )
         db.session.add(existing_payment)
-
+        
         order.order_status = "Processing"
         db.session.commit()
-
-        #deduct stock and clear cart
-        deduct_stock(order.orderID)
-        clear_cart(order.user_id)
-
-        return jsonify({"message": "Payment successful, order updated, cart cleared"}), 200
+            
+        clear_cart(order.user_id)  # Clear the cart after successful payment
+        
+        return jsonify({"message": "Payment successful, order is now processing Cart cleared"}), 200
 
     # Handle failed payments 
     elif event in ["charge.failed", "charge.abandoned", "charge.expired"] or status != "success":
         if existing_payment:
             existing_payment.paymentStatus = "Failed"
+            db.session.add(existing_payment)
         else:
             failed_payment = Payment(
                 userID=order.user_id,
@@ -173,8 +184,8 @@ def paystack_webhook():
             )
             db.session.add(failed_payment)
 
-        order.order_status = "Unpaid"
+        order.order_status = "Cancelled"
         db.session.commit()
-        return jsonify({"message": "Payment failed, order remains unpaid"}), 200
+        return jsonify({"message": "Payment failed, Order Cancelled"}), 200
 
     return jsonify({"message": "Unhandled event"}), 400

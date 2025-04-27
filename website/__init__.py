@@ -35,7 +35,6 @@ def create_app():
     migrate.init_app(app, db)
     jwt.init_app(app)
     
-    
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'routes.login'  # Redirect to login page if not authenticated
@@ -43,6 +42,7 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+    
     from .payment import payment
     from .orders import orders
     from .auth import auth
@@ -50,7 +50,9 @@ def create_app():
     from .views import views
     from .cart import cart
     from .views import uploads
+    from website.transactions import admin_dashboard 
     
+    app.register_blueprint(admin_dashboard , url_prefix='/api/', name='admin_dashboard_blueprint') 
     app.register_blueprint(uploads, url_prefix='/uploads', name='uploads_blueprint')
     app.register_blueprint(cart, url_prefix='/api/', name='cart_blueprint') 
     app.register_blueprint(payment, url_prefix='/api/', name='payment_blueprint')

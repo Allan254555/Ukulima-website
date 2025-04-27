@@ -32,6 +32,7 @@ def add_to_cart():
                 # Update existing cart item
                 cart_item.quantity += quantity
                 cart_item.total_price = cart_item.quantity * product.price
+                total_price = cart_item.total_price
             else:
                 return jsonify({"msg": "Insufficient stock"}), 400
         else:
@@ -131,10 +132,19 @@ def view_cart():
             })
 
     total_amount = sum(item.total_price for item in cart_items)
+    
+    if total_amount > 1500:
+        delivery_fee = 150
+    else:
+        delivery_fee = 0
+    
+    total_amount += delivery_fee  # Add delivery fee to total amount
 
     return jsonify({
         "cart": cart_list,
-        "total_amount": total_amount
+        "total_amount": total_amount,
+        "delivery_fee": delivery_fee,
+        "total_items": len(cart_list)
     })
 
 def clear_cart(user_id):

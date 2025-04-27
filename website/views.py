@@ -107,6 +107,25 @@ def add_product():
 
     return jsonify({"msg": "Product added successfully"}), 201
 
+@views.route('/staff/categories/<int:categoryId>', methods=['PUT'])
+@staff_required
+def update_category(categoryId):
+    category = Category.query.get(categoryId)
+    if not category:
+        return jsonify({"msg":"Category not found"}), 404
+    data = request.get_json()
+    name = data.get('name')
+    if name is not None:
+        if name.strip() == "":
+            return jsonify({'msg': 'Category name cannot be empty'}), 400
+        existing = Category.query.filter(Category.name == name, Category.categoryId != categoryId).first()
+        if existing:
+            return jsonify({'msg': 'Another category with that name already exists'}), 400
+        category.name = name
+        
+        db.session.commit()
+        return jsonify({"msg": "Category updated successfully"}), 200
+
 @views.route('/staff/products/<int:productsID>', methods=['PATCH'])
 @staff_required
 def update_product(productsID):
@@ -158,6 +177,20 @@ def update_product(productsID):
         response['status'] = 'Out of Stock'
 
     return jsonify(response), 200
+
+@views.route('/staff/categories/<int:categoryId>', methods=['DELETE'])
+@staff_required
+def delete_category(categoryId):
+    category = Category.query.get(categoryId)
+    if not category:
+        return jsonify({"msg": "Category not found"}), 404
+
+    db.session.delete(category)
+    db.session.commit()
+
+    return jsonify({"msg": "Category deleted successfully and its products deleted sucessfully"}), 200
+
+#Delete product
 @views.route('/staff/products/<int:productsID>', methods=['DELETE'])
 @staff_required
 def delete_product(productsID):
@@ -170,6 +203,7 @@ def delete_product(productsID):
 
     return jsonify({"msg": "Product deleted successfully"}), 200
 
+#Display all products with pagination and there details
 @views.route('/products', methods=['GET'])
 def get_products():
     page = request.args.get('page', 1, type=int)

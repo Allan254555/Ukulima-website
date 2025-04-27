@@ -2,11 +2,14 @@ from flask import Blueprint,request,jsonify,render_template, url_for,flash, redi
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 from . import db
+from dotenv import load_dotenv
 from functools import wraps
 import os
+
 from datetime import date
 from .models import User,  Employee
 
+load_dotenv
 
 routes = Blueprint('routes', __name__)
 
@@ -136,7 +139,7 @@ def register_staff():
             phone=phone,
             email=email,
             password=hashed_password,
-            is_staff=True  # Ensure they are an staff
+            is_staff=True  # Ensure they are staff
         )
         db.session.add(new_staff)
         db.session.commit()

@@ -112,6 +112,7 @@ def get_my_orders():
             "order_date": order.order_date.strftime("%Y-%m-%d %H:%M:%S"),
             "order_status": order.order_status,
             "total_amount": order.total_amount,
+            "delivery_address": order.delivery_address,
             "items": items
         })
         
@@ -156,7 +157,7 @@ def view_orders():
             "email": order.user.email,
             "order_date": order.order_date.strftime("%Y-%m-%d %H:%M:%S"),
             "order_status": order.order_status,
-            "total_amount": order.total_amount,
+            "total_amount": order.total_amount
             
         })
         
@@ -170,7 +171,10 @@ def get_order_details(orderID):
     if not order:
         return jsonify({"msg":"Order not found"}),404
     items= []
+    total_amount = 0
     for item in order.items:
+        item_sub_total = item.sub_total
+        total_amount += item_sub_total
         items.append({
             "productName": item.product.productName,
             "quantity": item.quantity,
@@ -185,9 +189,12 @@ def get_order_details(orderID):
             "name":f"{order.user.firstname} {order.user.lastname}",
             "email":order.user.email,
             "phone":order.user.phone,
+            "delivery_address":order.delivery_address
         },
         "items": items,
-        "total_amount": order.total_amount,
+        "delivery_fee": order.delivery_fee,
+        "total_amount": total_amount,
+        "grand_total": order.total_amount,
         "order_status": order.order_status,
         "order_date": order.order_date.strftime("%Y-%m-%d %H:%M:%S"),
         }
@@ -195,7 +202,7 @@ def get_order_details(orderID):
     return jsonify(data), 200
     
 # Update order status in order details page
-@orders.route("/admin/order_update/<int:orderID>", methods=["PATCH"])
+@orders.route("/admin/order/update/<int:orderID>", methods=["PATCH"])
 @jwt_required()
 def update_order_status(orderID):
     email = get_jwt_identity()
@@ -232,16 +239,34 @@ def update_order_status(orderID):
         return jsonify({"msg": "Error updating status", "error": str(e)}), 500
 
 
-def deduct_stock(order_id):
-    order = Orders.query.get(order_id)
-    if not order:
-        return jsonify({"msg": "Order not found"}), 404
-
-    for item in order.items:
+def deduct_stock(order_id, user_id):
+    order_items = OrderItem.query.filter_by(orderID=order_id).all()
+    insufficient_items = []
+    
+    for item in order_items:
         product = Product.query.get(item.productID)
-        if product and product.quantity >= item.quantity:
-            product.quantity -= item.quantity
-        else:
-            return jsonify({"msg": f"Insufficient stock for {product.productName}"}), 400
+        if not product:
+            continue
+        if item.quantity > product.quantity:
+            insufficient_items.append({
+                "product_name":product.productName,
+                "product_id":product.productID
+            })
+             
+    if insufficient_items:
+        #Update carts to reflect the new quantities
+        for item in insufficient_items:
+            cart_item = Cart.query.filter_by(productID=item["product_id"]).first()
+            if cart_item:
+                cart_item.quantity = item["available"]
+                db.session.commit()
+        return {"success": False, "items": insufficient_items}
 
-    db.session.commit()
+    # All items are in stock,deduct quantities
+    for item in order_items:
+        product = Product.query.get(item.productID)
+        product.quantity -= item.quantity
+        db.session.commit()
+
+    return {"success": True}
+            
