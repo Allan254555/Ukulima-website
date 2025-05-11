@@ -7,7 +7,7 @@ admin_dashboard = Blueprint('admin_dashboard', __name__)
 @admin_dashboard.route('/admin/summary', methods=['GET'])
 @jwt_required()
 def get_admin_summary():
-    # Optional: Check if user is admin (for extra security)
+   
     current_user_email = get_jwt_identity()
     admin_user = User.query.filter_by(email=current_user_email, role='admin').first()
     if not admin_user:
@@ -26,5 +26,5 @@ def get_admin_summary():
         "total_users": total_users,
         "total_products": total_products,
         "total_categories": total_categories,
-        "total_sales": f"Ksh {total_sales:,.0f}"  # Format with commas
+        "total_sales": f"Ksh {total_sales:,.0f}"  
     }), 200

@@ -45,7 +45,7 @@ class Orders(db.Model):
     delivery_fee = db.Column(db.Numeric(10, 2), nullable=False)  # ✅ delivery fee
     delivery_address = db.Column(db.String(255), nullable=False)
     
-    order_status = db.Column(db.Enum('Unpaid','Pending','Processing','Shipped','Delivered','Cancelled'), default='Unpaid')
+    order_status = db.Column(db.Enum('Unpaid','Pending','Processing','Shipped','Delivered','Cancelled', name='order_status_enum'), default='Unpaid')
     paystack_reference = db.Column(db.String(255), nullable=True)
     order_date = db.Column(db.DateTime, default=datetime.now())
     created_at = db.Column(db.DateTime, default=datetime.now())
@@ -68,8 +68,8 @@ class Payment(db.Model):
     orderID = db.Column(db.Integer, db.ForeignKey(Orders.orderID), nullable=False)
     userID = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
     amount = db.Column(db.Numeric(10,2), nullable=False)
-    paymentMethod = db.Column(db.Enum("Paystack","Mobilemoney"), nullable=False)
-    paymentStatus = db.Column(db.Enum('Pending','Success'), default='Pending')
+    paymentMethod = db.Column(db.Enum("Paystack","Mobilemoney",name='payment_method_enum'), nullable=False)
+    paymentStatus = db.Column(db.Enum('Pending','Success',name='payment_status_enum'), default='Pending')
     transaction_reference = db.Column(db.String(255), nullable=True)
     currency = db.Column(db.String(3), default="KES")
     paymentDate = db.Column(db.DateTime, default=datetime.now())

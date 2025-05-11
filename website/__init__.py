@@ -16,7 +16,7 @@ def create_app():
     app=Flask(__name__, template_folder='templates', static_folder="static")
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')  # Secret Key for session management
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')  # JWT Secret Key
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('ORACLE_DB')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(hours=24)
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
