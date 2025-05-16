@@ -50,7 +50,7 @@ def create_app():
     from .views import views
     from .cart import cart
     from .views import uploads
-    from website.transactions import admin_dashboard 
+    from website.transactions import admin_dashboard
     
     app.register_blueprint(admin_dashboard , url_prefix='/api/', name='admin_dashboard_blueprint') 
     app.register_blueprint(uploads, url_prefix='/uploads', name='uploads_blueprint')
