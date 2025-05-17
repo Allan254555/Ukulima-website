@@ -6,6 +6,8 @@ from functools import wraps
 import os
 from datetime import date
 from .models import User,  Employee
+from website import mail,db
+from flask_mail import Message
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from flask import session
 
@@ -37,14 +39,33 @@ def register():
     
     login_user(new_user)  # Log in the user after registration
 
+    try:
+        msg = Message(
+        subject="Welcome to Farmers E-Commerce",
+        sender=("Farmers Platform", os.environ.get("MAIL_USERNAME")),
+        recipients=[email],
+        body=f"""Hello {firstname},
+
+Thank you for registering on Farmers E-Commerce.
+
+We're glad to have you onboard!
+
+Best regards,
+Farmers Platform Team"""
+    )
+        mail.send(msg)
+
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+    
     return jsonify({"msg": "Registration successful",
-                    "User":{
-                        "id":new_user.id,
-                        "firstname":new_user.firstname,
-                        "lastname":new_user.lastname,
-                        "email":new_user.email,
-                        "phone":new_user.phone,
-                        }}), 201
+                        "User":{
+                            "id":new_user.id,
+                            "firstname":new_user.firstname,
+                            "lastname":new_user.lastname,
+                            "email":new_user.email,
+                            "phone":new_user.phone,
+                            }}), 201
 
 # Login Endpoint
 @auth.route('/login', methods=['POST'])

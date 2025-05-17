@@ -126,7 +126,7 @@ def view_cart():
                 "productID": item.productID,
                 "productName": product.productName,
                 "price": product.price,
-                "image_url": url_for('uploads_blueprint.serve_upload', filename=product.image_url, _external=True),
+                "image_url": product.image_url,
                 "quantity": item.quantity,
                 "total_price": item.total_price
             })

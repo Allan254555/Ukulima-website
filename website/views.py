@@ -1,3 +1,5 @@
+import cloudinary
+import cloudinary.uploader
 from flask import Blueprint, jsonify, redirect, request, send_from_directory, url_for
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import db
@@ -11,17 +13,15 @@ from .config import Config
 views = Blueprint("views", __name__)
 uploads =Blueprint("uploads", __name__)
 
-# Ensure the upload folder exists
-UPLOAD_FOLDER = os.path.join(os.getcwd(),'static', 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 
 # Check allowed file types
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in Config.ALLOWED_EXTENSIONS
 
-@uploads.route('/<filename>')
+"""@uploads.route('/<filename>')
 def serve_upload(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    return send_from_directory(UPLOAD_FOLDER, filename)"""
 
 
 @views.route('/categories', methods=['GET'])
@@ -30,7 +30,7 @@ def get_categories():
     category_list = [{
         "id": c.categoryId, 
         "name": c.name,
-        "image_url": url_for('uploads_blueprint.serve_upload', filename=c.image_url, _external=True)
+        "image_url": c.image_url
         } for c in categories]
     return jsonify({"categories": category_list})
 
@@ -51,12 +51,8 @@ def add_category():
     if not allowed_file(file.filename):
         return jsonify({'msg': 'Invalid file type'}), 400
 
-    file_ext = file.filename.rsplit('.', 1)[1].lower()
-    unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
-    filepath = os.path.join(UPLOAD_FOLDER, unique_filename)
-
-    file.save(filepath)
-    image_url = unique_filename
+    upload_result = cloudinary.uploader.upload(file, folder="cartegories")
+    image_url = upload_result['secure_url']
 
     new_category = Category(name=name, image_url=image_url)
     db.session.add(new_category)
@@ -89,12 +85,8 @@ def add_product():
     if not allowed_file(file.filename):
         return jsonify({'msg': 'Invalid file type'}), 400
 
-    file_ext = file.filename.rsplit('.', 1)[1].lower()
-    unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
-    filepath = os.path.join(UPLOAD_FOLDER, unique_filename)
-
-    file.save(filepath)
-    image_url = unique_filename
+    upload_result = cloudinary.uploader.upload(file,folder="products")
+    image_url = upload_result['secure_url']
 
     new_product = Product(productName=productName,
                           price=price,
@@ -122,7 +114,7 @@ def update_category(categoryId):
         if existing:
             return jsonify({'msg': 'Another category with that name already exists'}), 400
         category.name = name
-        
+
         db.session.commit()
         return jsonify({"msg": "Category updated successfully"}), 200
 
@@ -220,7 +212,7 @@ def get_products():
             "status": "Out of Stock" if p.quantity == 0 else "In Stock",
             "productDescription": p.productDescription,
             "categoryName": p.category.name if p.category else None,
-            "image_url": url_for('uploads_blueprint.serve_upload', filename=p.image_url, _external=True)
+            "image_url": p.image_url
             
         }
         for p in pagination.items

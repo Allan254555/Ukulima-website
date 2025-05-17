@@ -6,14 +6,16 @@ import datetime
 from dotenv import load_dotenv
 import os
 from flask_login import LoginManager
+from flask_mail import Mail, Message
 
 db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
 load_dotenv()
+mail = Mail()
     
 def create_app():
-    app=Flask(__name__, template_folder='templates', static_folder="static")
+    app=Flask(__name__, template_folder='templates')
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')  # Secret Key for session management
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')  # JWT Secret Key
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('ORACLE_DB')
@@ -24,7 +26,9 @@ def create_app():
     app.config['MAIL_USE_TLS'] = True
     app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')  # Your Gmail address
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')  # Use App Password (not your Gmail password)
-    app.config['MAIL_DEFAULT_SENDER'] = 'your_email@gmail.com'
+    app.config['MAIL_DEFAULT_SENDER'] = ("Flaask App",os.getenv('MAIL_USERNAME')) # Your Gmail address
+    
+    mail.init_app(app)
     
     
     flask_env = os.getenv('FLASK_ENV', 'production')
