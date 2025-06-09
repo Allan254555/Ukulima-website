@@ -4,11 +4,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from . import db
 from functools import wraps
 import os
-from datetime import date
 from .models import User,  Employee
 from website import mail,db
 from flask_mail import Message
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
+from itsdangerous import URLSafeTimedSerializer
+from flask import current_app
 from flask import session
 
 
@@ -93,4 +94,73 @@ def login():
         response["is_staff"] = True
         
     return jsonify(response), 200
+
+
+
+#Forgot password
+#Set up token generator
+def generate_reset_token(email):
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    return serializer.dumps(email, salt='password-reset-salt')
+
+#Token verifier
+def verify_reset_token(token, expiration=1800):#Expiration 30 minutes
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    try:
+        email= serializer.loads(token, salt='password-reset-salt', max_age=expiration)
+    except Exception:
+        return None
+    return email
+    
+def send_request_email(user):
+    data = request.get_json
+    firstname = user.firstname
+    token = generate_reset_token(user.email)
+    reset_url = url_for('auth_blueprint.reset_password',token=token, _external= True)
+    msg = Message(
+        sender= ('Farmers Platform', os.environ.get('MAIL_USERNAME')),
+        recipients = [user.email],
+        body = f'''Hello {firstname},
+        
+        To reset your password, click the following link {reset_url}.
+        
+        If you did not request this, kindly ignore this email.
+        '''
+    )
+    mail.send(msg)
+    
+@auth.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    data = request.get_json()
+    email = data.get('email')
+    user = User.query.filter_by(email=email).first()
+    if user:
+        send_request_email(user)
+    
+    return jsonify({'msg':'Reset link send'}), 200
+
+            
+#Reset password
+@auth.route("/reset-password/<token>", methods=['POST'])
+def reset_password(token):
+    email = verify_reset_token(token)
+    if not email:
+        return 'Token expired or invalid', 400
+    
+    if request.method== "POST":
+        data = request.get_json()
+        new_password = data.get('new_password')
+        confirm = data.get('confirm_password')
+        if new_password != confirm:
+            return jsonify({'error':'passwords do not match'}), 400
+        
+        user = User.query.filter_by(email=email).first()
+        user.set_password(new_password)
+        db.session.commit()
+        return jsonify({'message': 'Password reset successfully'})
+        
+        
+            
+            
+            
     

@@ -45,7 +45,7 @@ for product in products:
 
 # Save updated URLs to the database
 db.session.commit()
-print("✅ Migration completed and URLs updated in the database.")
+print("Migration completed and URLs updated in the database.")
 
 
 #delete images in uploads folder
@@ -53,4 +53,4 @@ import shutil
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "static", "uploads")
 shutil.rmtree(UPLOAD_FOLDER)
-print("🧹 Local uploads folder removed.")
+print("Local uploads folder removed.")

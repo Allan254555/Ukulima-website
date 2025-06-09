@@ -1,26 +1,29 @@
 from . import db
 from datetime import datetime
 from flask_login import UserMixin
-
+from werkzeug.security import check_password_hash, generate_password_hash
 # User model
 class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     firstname = db.Column(db.String(150), nullable=False)
     lastname= db.Column(db.String(150), nullable=False)
     phone = db.Column(db.String(150), unique=True, nullable=False)
     email = db.Column(db.String(150),unique=True,nullable=False)
     password = db.Column(db.String(255), nullable=False)
     is_staff = db.Column(db.Boolean, default=False)
+    
+    def set_password(self, raw_password):
+        self.password = generate_password_hash(raw_password)
    
 #Employee model for employee details
 class Employee(db.Model, UserMixin):
-    employeeId = db.Column(db.Integer,primary_key=True)
+    employeeId = db.Column(db.Integer,primary_key=True, autoincrement=True)
     userId = db.Column(db.Integer, db.ForeignKey(User.id),nullable=False,unique=True)
     hireDate = db.Column(db.Date, nullable=False)
     
 #category model for product category
 class Category(db.Model):
-    categoryId = db.Column(db.Integer,primary_key=True)
+    categoryId = db.Column(db.Integer,primary_key=True, autoincrement=True)
     name=db.Column(db.String(100),unique=True, nullable=False)
     image_url=db.Column(db.String(255), nullable=True)
     
@@ -29,7 +32,7 @@ class Category(db.Model):
     
 #Product model for the product category
 class Product(db.Model):
-    productsID = db.Column(db.Integer,primary_key=True)
+    productsID = db.Column(db.Integer,primary_key=True, autoincrement=True)
     categoryId = db.Column(db.Integer, db.ForeignKey('category.categoryId'),nullable=False)
     productName =db.Column(db.String(100),unique=True,nullable=False)
     price = db.Column(db.Float,nullable=False)
@@ -38,7 +41,7 @@ class Product(db.Model):
     quantity =db.Column(db.Integer)
     
 class Orders(db.Model):
-    orderID = db.Column(db.Integer, primary_key=True)
+    orderID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
     total_amount = db.Column(db.Numeric(10,2), nullable=False)
     
@@ -55,7 +58,7 @@ class Orders(db.Model):
     items = db.relationship('OrderItem', backref='orders', lazy=True, cascade='all, delete-orphan')
     
 class OrderItem(db.Model):
-    itemID = db.Column(db.Integer, primary_key=True)
+    itemID = db.Column(db.Integer, primary_key=True,autoincrement=True)
     orderID = db.Column(db.Integer, db.ForeignKey(Orders.orderID), nullable=False)
     productID = db.Column(db.Integer, db.ForeignKey(Product.productsID), nullable=False)
     quantity = db.Column(db.Integer, nullable= False, default=0)
@@ -64,7 +67,7 @@ class OrderItem(db.Model):
     product = db.relationship('Product', backref=db.backref('order_items', lazy=True, cascade='all, delete'))
     
 class Payment(db.Model):
-    paymentID = db.Column(db.Integer, primary_key=True)
+    paymentID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     orderID = db.Column(db.Integer, db.ForeignKey(Orders.orderID), nullable=False)
     userID = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
     amount = db.Column(db.Numeric(10,2), nullable=False)
@@ -78,7 +81,7 @@ class Payment(db.Model):
     user = db.relationship('User', backref=db.backref('payments', lazy=True, cascade='all, delete'))
     
 class Cart(db.Model):
-    cartID =db.Column(db.Integer, primary_key=True)
+    cartID =db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
     productID = db.Column(db.Integer, db.ForeignKey('product.productsID'), nullable=False)
     quantity = db.Column(db.Integer, default=1, nullable=False)

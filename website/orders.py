@@ -1,5 +1,8 @@
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for
 from .models import db, Orders, OrderItem, Product, Cart, User
+from sqlalchemy import text
+import traceback
+import sys
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 orders = Blueprint("orders", __name__)
@@ -83,7 +86,13 @@ def create_order():
         return jsonify({"msg": "Order created successfully", "orderID": new_order.orderID}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({"msg": "Error creating order", "error": str(e)}), 500
+        traceback.print_exc()  # Print full traceback to console
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        return jsonify({
+        "msg": "Error creating order",
+        "error_type": str(exc_type),
+        "error_message": str(exc_value),
+    }), 500
 
 
 #Customer can view there own orders
@@ -227,7 +236,7 @@ def update_order_status(orderID):
             for item in order.items:
                 product = Product.query.get(item.productID)
                 if product:
-                    product.quantity += item.quantity
+                    product.quantity -= item.quantity
 
         order.order_status = new_status
         db.session.commit()
